@@ -862,6 +862,18 @@ module Viewpoint::EWS::SOAP
       nbuild[NS_EWS_TYPES].Interval(num)
     end
 
+    def days_of_week!(days)
+      nbuild[NS_EWS_TYPES].DaysOfWeek(days)
+    end
+
+    def end_date_recurrence!(item)
+      nbuild[NS_EWS_TYPES].EndDateRecurrence {
+        item.each_pair { |k, v|
+          self.send("#{k}!", v)
+        }
+      }  
+    end
+
     def no_end_recurrence!(item)
       nbuild[NS_EWS_TYPES].NoEndRecurrence {
         item.each_pair { |k, v|
@@ -1005,6 +1017,14 @@ module Viewpoint::EWS::SOAP
       nbuild[NS_EWS_TYPES].StartDate sd[:text]
     end
 
+    def end_date!(ed)
+      nbuild[NS_EWS_TYPES].EndDate ed[:text]
+    end
+
+    def is_response_requested!(isr)
+      nbuild[NS_EWS_TYPES].IsResponseRequested isr[:text]
+    end
+
     def due_date!(dd)
       nbuild[NS_EWS_TYPES].DueDate format_time(dd[:text])
     end
@@ -1068,9 +1088,9 @@ module Viewpoint::EWS::SOAP
       uri = upd.select {|k,v| k =~ /_uri/i}
       raise EwsBadArgumentError, "Bad argument given for AppendToItemField." if uri.keys.length != 1
       upd.delete(uri.keys.first)
-      @nbuild.AppendToItemField {
-        dispatch_field_uri!(uri)
-        dispatch_field_item!(upd)
+      @nbuild[NS_EWS_TYPES].AppendToItemField {
+        dispatch_field_uri!(uri, NS_EWS_TYPES)
+        dispatch_field_item!(upd, NS_EWS_TYPES)
       }
     end
 
@@ -1178,8 +1198,7 @@ module Viewpoint::EWS::SOAP
       when :item_id
         item_id!(item)
       when :occurrence_item_id
-        occurrence_item_id!(
-          item[:recurring_master_id], item[:change_key], item[:instance_index])
+        occurrence_item_id!(item)
       when :recurring_master_item_id
         recurring_master_item_id!(item[:occurrence_id], item[:change_key])
       else
